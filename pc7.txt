@@ -1,15 +1,25 @@
+// mpi_broadcast.c
 #include <mpi.h>
 #include <stdio.h>
-
-int main(int argc,char**argv){
-  MPI_Init(&argc,&argv);
-  int r,data;
-  MPI_Comm_rank(MPI_COMM_WORLD,&r);
-
-  if(r==0) data = 100;          // root sets value
-  MPI_Bcast(&data,1,MPI_INT,0,MPI_COMM_WORLD);
-
-  printf("P%d received %d\n", r, data);
-  MPI_Finalize();
-  return 0;
+int main(int argc, char *argv[]) {
+int rank, size;
+int data;
+// Initialize the MPI environment
+MPI_Init(&argc, &argv);
+// Get the rank of the process
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+// Get the total number of processes
+MPI_Comm_size(MPI_COMM_WORLD, &size);
+if (rank == 0) {
+// Only the root process sets the value
+data = 42;
+printf("Process %d is broadcasting data = %d\n", rank, data);
+}
+// Broadcast the data from root (rank 0) to all processes
+MPI_Bcast(&data, 1, MPI_INT, 0, MPI_COMM_WORLD);
+// Each process prints the received data
+printf("Process %d received data = %d\n", rank, data);
+// Finalize the MPI environment
+MPI_Finalize();
+return 0;
 }
