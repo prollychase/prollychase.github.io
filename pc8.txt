@@ -1,19 +1,51 @@
-#include <stdio.h>
+// mpi_scatter_gather.c
 #include <mpi.h>
-int main(int argc, char** argv) {
- int rank, size, send_data[4] = {10, 20, 30, 40}, recv_data;
- MPI_Init(&argc, &argv);
- MPI_Comm_rank(MPI_COMM_WORLD, &rank);
- MPI_Comm_size(MPI_COMM_WORLD, &size);
-MPI_Scatter(send_data, 1, MPI_INT, &recv_data, 1, MPI_INT, 0, MPI_COMM_WORLD);
- printf("Process %d received: %d\n", rank, recv_data);
- recv_data += 1;
- MPI_Gather(&recv_data, 1, MPI_INT, send_data, 1, MPI_INT, 0, MPI_COMM_WORLD);
- if (rank == 0) {
- printf("Gathered data: ");
- for (int i = 0; i < size; i++) printf("%d ", send_data[i]);
- printf("\n");
- }
- MPI_Finalize();
- return 0;
-} 
+#include <stdio.h>
+int main(int argc, char *argv[]) {
+int rank, size;
+int send_data[100]; // Only used in root
+int recv_data[10]; // Each process receives 10 integers
+int gathered_data[100]; // Only used in root for gathering
+MPI_Init(&argc, &argv);
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+MPI_Comm_size(MPI_COMM_WORLD, &size);
+// Ensure we have exactly 10 elements per process
+if (100 % size != 0) {
+if (rank == 0)
+printf("Array size (100) must be divisible by number of processes.\n");
+MPI_Finalize();
+return 0;
+}
+int chunk_size = 100 / size;
+// Root initializes the array
+if (rank == 0) {
+for (int i = 0; i < 100; i++) {
+send_data[i] = i + 1;
+}
+printf("Root process initialized array to scatter.\n");
+}
+// Scatter 100 elements from root to all processes (each gets chunk_size elements)
+MPI_Scatter(send_data, chunk_size, MPI_INT, recv_data, chunk_size, MPI_INT, 0, MPI_COMM_WORLD);
+// Each process prints what it received
+printf("Process %d received data: ", rank);
+for (int i = 0; i < chunk_size; i++) {
+printf("%d ", recv_data[i]);
+}
+printf("\n");
+// Modify the received data (for demonstration)
+for (int i = 0; i < chunk_size; i++) {
+recv_data[i] *= 2; // Multiply each element by 2
+}
+// Gather modified data from all processes back to root
+MPI_Gather(recv_data, chunk_size, MPI_INT, gathered_data, chunk_size, MPI_INT, 0, MPI_COMM_WORLD);
+// Root prints the gathered array
+if (rank == 0) {
+printf("Root process gathered modified data: ");
+for (int i = 0; i < 100; i++) {
+printf("%d ", gathered_data[i]);
+}
+printf("\n");
+}
+MPI_Finalize();
+return 0;
+}
